@@ -5,8 +5,8 @@
   xmlns:map="http://www.w3.org/2005/xpath-functions/map"
   xmlns:array="http://www.w3.org/2005/xpath-functions/array"
   xmlns:err="http://www.w3.org/2005/xqt-errors"
-  xmlns:adt="http://expath.org/ns/task/adt"
   xmlns:task="http://expath.org/ns/task"
+  xmlns:adt="http://expath.org/ns/task/adt"
   exclude-result-prefixes="#all"
   version="3.0">
   
@@ -78,6 +78,16 @@
           task:create-monadic-task($fmap-apply-fn)
       },
       
+      'sequence': function($tasks as map(xs:string, function(*))+) as map(*) {
+        let $sequence-apply-fn := function($realworld as element(adt:realworld)) as item() + {
+          let $io-res := $apply-fn($realworld)
+          return
+            task:sequence-recursive-apply(fn:head($io-res), $tasks, [fn:tail($io-res)])
+        }
+        return
+          task:create-monadic-task($sequence-apply-fn)
+      },
+      
       'async': function() as map(*) {
         let $async-apply-fn := function($realworld as element(adt:realworld)) as item() + {
           let $exec-NO-async := $apply-fn($realworld), 
@@ -108,7 +118,7 @@
   <xsl:function name="task:value" as="map(*)">
     <xsl:param name="u" as="item()*"/>
     <xsl:sequence select="task:create-monadic-task(function($realworld) {
-      ($realworld, $u)
+        ($realworld, $u)
       })"/>
   </xsl:function>
   
@@ -118,7 +128,7 @@
   <xsl:function name="task:of" as="map(*)">
     <xsl:param name="f" as="function() as item()*"/>
     <xsl:sequence select="task:create-monadic-task(function($realworld) {
-      ($realworld, $f())
+        ($realworld, $f())
       })"/>
   </xsl:function>
   
@@ -156,7 +166,7 @@
   <xsl:function name="task:sequence" as="map(*)">
     <xsl:param name="tasks" as="map(*)+"/>
     <xsl:sequence select="task:create-monadic-task(function($realworld) {
-      task:sequence-recursive-apply($realworld, $tasks, [])
+        task:sequence-recursive-apply($realworld, $tasks, [])
       })"/>
   </xsl:function>
   
@@ -198,6 +208,47 @@
         task:create-monadic-task($wait-all-apply-fn)"/>
   </xsl:function>
   
+  <!-- Given an Async this function will attempt to cancel the asynchronous process.
+    
+    This is a best effort approach. There is no guarantee that the asynchronous process will obey cancellation.
+    
+    If the Asynchronous computation represented by the Async has already completed, then no cancellation will occur.
+    
+    @param $async the asynchronous computation
+    @return A new Task representing the action to cancel an asynchronous computation. -->
+  <xsl:function name="task:cancel" as="map(*)">
+    <xsl:param name="async" as="function(element(adt:scheduler)) as item()+"/>
+    <xsl:sequence select="let $cancel-apply-fn := function($realworld as element(adt:realworld)) as item()+ {
+      (: we can't implement this properly in XPath, as the async will have
+      already executed synchronously as our XSLT implementation
+      is purely synchronous; so we don't really have to do anything here! :)
+        ($realworld, ())
+      }
+      return
+        task:create-monadic-task($cancel-apply-fn)"/>
+  </xsl:function>
+  
+  <!-- Given multiple Asyncs this function will attempt to cancel all of the asynchronous processes.
+    
+    This is a best effort approach. There is no guarantee that any asynchronous process will obey cancellation.
+    
+    If any of the the Asynchronous computations represented by the Asyncs have already completed, then those will not be
+    cancelled.
+    
+    @param $asyncs the asynchronous computations
+    @return A new Task representing the action to cancel the asynchronous computations. -->
+  <xsl:function name="task:cancel-all" as="map(*)">
+    <xsl:param name="asyncs" as="array(function(element(adt:scheduler)) as item()+)"/>
+    <xsl:sequence select="let $cancel-all-apply-fn := function($realworld as element(adt:realworld)) as item()+ {
+      (: we can't implement this properly in XPath, as the async will have
+      already executed synchronously as our XSLT implementation
+      is purely synchronous; so we don't really have to do anything here! :)
+        ($realworld, ())
+      }
+      return
+        task:create-monadic-task($cancel-all-apply-fn)"/>
+  </xsl:function>
+  
   <!-- Executes a Task.
     
     WARNING 
@@ -210,8 +261,8 @@
   <xsl:function name="task:RUN-UNSAFE">
     <xsl:param name="task" as="map(*)"/>
     <xsl:sequence select="subsequence(
-      $task?apply($realworldEl),
-      2
+        $task?apply($realworldEl),
+        2
       )"/>
   </xsl:function>
   

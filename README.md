@@ -23,4 +23,5 @@ xmlns:adt="http://expath.org/ns/task/adt"
 
 ## Examples
 
-See the [`task-examples.xsl`]() file for various examples. These can be run independently by running the stylesheet with different initial templates (`ex1`, `ex1b`, and so on) for the different tests. For example supply `-xsl:task-examples.xsl -it:ex1` to run Example 1.
+See the [`task-examples.xsl`]() file for various examples. These can be run independently by running the stylesheet with
+different initial templates (`exA1`, `exA1.1`, and so on) for the different tests. For example supply `-xsl:task-examples.xsl -it:exA1` to run Example 1.
